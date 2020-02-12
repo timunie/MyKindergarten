@@ -1,0 +1,62 @@
+﻿<mah:MetroWindow x:Class="MyKindergarten.Views.EditCategory"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                 xmlns:lang="clr-namespace:MyKindergarten.Lang"
+                 xmlns:local="clr-namespace:MyKindergarten.Views"
+                 xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
+                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                 xmlns:model="clr-namespace:MyKindergarten.Model"
+                 Title="EditCategory"
+                 Width="800"
+                 Height="450"
+                 d:DataContext="{d:DesignInstance Type=model:Category}"
+                 mc:Ignorable="d">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ScrollViewer Grid.IsSharedSizeScope="True">
+            <StackPanel>
+                <GroupBox Header="Referenz">
+                    <StackPanel>
+                        <mah:MetroHeader Header="{x:Static lang:General.ID}">
+                            <TextBox IsReadOnly="True" Text="{Binding ID, Mode=OneWay}" />
+                        </mah:MetroHeader>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="Information">
+                    <StackPanel>
+                        <mah:MetroHeader Header="{x:Static lang:General.Title}">
+                            <TextBox Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}" />
+                        </mah:MetroHeader>
+
+                        <mah:MetroHeader Header="{x:Static lang:General.Description}">
+                            <TextBox Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" />
+                        </mah:MetroHeader>
+
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="Icon">
+                    <StackPanel>
+                        <Border>
+                            <Image Width="50"
+                                   Height="50"
+                                   Source="{Binding Icon, IsAsync=True}" />
+                        </Border>
+
+                        <mah:MetroHeader>
+                            <TextBox Text="{Binding Icon}" />
+                        </mah:MetroHeader>
+
+                    </StackPanel>
+                </GroupBox>
+            </StackPanel>
+        </ScrollViewer>
+
+    </Grid>
+</mah:MetroWindow>
