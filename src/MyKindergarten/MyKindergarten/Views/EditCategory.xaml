@@ -23,7 +23,20 @@
                 <GroupBox Header="Referenz">
                     <StackPanel>
                         <mah:MetroHeader Header="{x:Static lang:General.ID}">
-                            <TextBox IsReadOnly="True" Text="{Binding ID, Mode=OneWay}" />
+                            <TextBox mah:TextBoxHelper.Watermark="{x:Static lang:General.Hint_IdIsGeneratedAutomatically}"
+                                     IsReadOnly="True"
+                                     Text="{Binding ID, Mode=OneWay}" />
+                        </mah:MetroHeader>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="Überkategorie">
+                    <StackPanel>
+                        <mah:MetroHeader Header="{x:Static lang:Category.HeaderCategory}">
+                            <ComboBox mah:TextBoxHelper.ClearTextButton="True"
+                                      ItemsSource="{x:Static model:ViewModel.AllCategories}"
+                                      SelectedItem="{Binding Parent, Mode=OneWay}"
+                                      SelectionChanged="cmbParentCategoryChanged" />
                         </mah:MetroHeader>
                     </StackPanel>
                 </GroupBox>
@@ -57,6 +70,11 @@
                 </GroupBox>
             </StackPanel>
         </ScrollViewer>
+
+        <UniformGrid Grid.Row="1" Columns="2">
+            <Button Click="btb_SaveAndExitClick" Content="{x:Static lang:General.SaveAndExit}" />
+            <Button Click="btnCancel_Click" Content="{x:Static lang:General.Cancel}" />
+        </UniformGrid>
 
     </Grid>
 </mah:MetroWindow>

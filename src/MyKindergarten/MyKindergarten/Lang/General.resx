@@ -115,4 +115,16 @@
   <data name="Err_FileNotFound" xml:space="preserve">
     <value>File not found</value>
   </data>
+  <data name="SaveAndExit" xml:space="preserve">
+    <value>Save and Close</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="ErrorTitle" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Hint_IdIsGeneratedAutomatically" xml:space="preserve">
+    <value>The ID is generated automatically</value>
+  </data>
 </root>

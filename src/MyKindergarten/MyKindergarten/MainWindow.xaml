@@ -25,10 +25,12 @@
 
         <Border Grid.ColumnSpan="3">
             <ToolBar>
-                <Button Command="{x:Static model:Category.EditCommand}" Content="{iconPacks:Material Kind=CommentPlus}" />
-                <Button Command="{x:Static model:Category.EditCommand}" 
-                        Content="{iconPacks:Material Kind=CommentEdit}"
-                        CommandParameter="{Binding ElementName=TreeCategories, Path=SelectedItem}" />
+                <Button Command="{x:Static model:Category.AddCommand}" Content="{iconPacks:Material Kind=CommentPlus, Width=32, Height=32}" />
+                <Button Command="{x:Static model:Category.EditCommand}"
+                        CommandParameter="{Binding ElementName=TreeCategories, Path=SelectedItem}"
+                        Content="{iconPacks:Material Kind=CommentEdit,
+                                                     Width=32,
+                                                     Height=32}" />
             </ToolBar>
         </Border>
 

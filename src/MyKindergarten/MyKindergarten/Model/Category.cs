@@ -3,13 +3,22 @@ using MyKindergarten.Views;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Data.SQLite;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace MyKindergarten.Model
 {
     public class Category : BaseClass
     {
+		public Category(SQLiteDataReader reader) : this()
+		{
+			ID = reader.GetNullableLong("ID");
+			Title = reader.GetString("Title");
+			Description = reader.GetString("Description");
+			Icon = reader.GetString("Icon");
+		}
 
 		public Category()
 		{
@@ -81,8 +90,9 @@ namespace MyKindergarten.Model
 		}
 
 		#region Commands
-		public static RelayCommand EditCommand { get; } = new RelayCommand(EditCommand_Execute, EditCommand_CanExecute);
 
+		// Edit 
+		public static RelayCommand EditCommand { get; } = new RelayCommand(EditCommand_Execute, EditCommand_CanExecute);
 		static void EditCommand_Execute (object param)
 		{
 			if (param is Category category)
@@ -95,6 +105,55 @@ namespace MyKindergarten.Model
 		static bool EditCommand_CanExecute(object param)
 		{
 			return param is Category;
+		}
+
+		// Add
+		public static RelayCommand AddCommand { get; } = new RelayCommand(AddCommand_Execute);
+		public static RelayCommand AddSubcategoryCommand { get; } = new RelayCommand(AddCommand_Execute, AddSubcategoryCommand_CanExecute);
+		static void AddCommand_Execute(object param)
+		{
+			EditCategory dialog;
+			if (param is Category category)
+			{
+				dialog = new EditCategory() { DataContext = category };
+			}
+			else
+			{
+				dialog = new EditCategory() { DataContext = new Category() };
+			}
+				dialog.ShowDialog();
+		}
+
+		static bool AddSubcategoryCommand_CanExecute(object param)
+		{
+			return param is Category;
+		}
+
+		public Task<bool> Save()
+		{
+			try
+			{
+				using var conn = new SQLiteConnection(ViewModel.ConnectionString, true);
+				conn.Open();
+
+				using var cmd = conn.CreateCommand();
+
+				cmd.CommandText = "REPLACE INTO Category (ID, Title, Parent, Icon, Description) VALUES (@ID, @Title, @Parent, @Icon, @Description);";
+				
+				cmd.Parameters.AddWithValue("@ID", ID);
+				cmd.Parameters.AddWithValue("@Title", Title);
+				cmd.Parameters.AddWithValue("@Parent", Parent?.ID);
+				cmd.Parameters.AddWithValue("@Icon", Icon);
+				cmd.Parameters.AddWithValue("@Description", Description);
+
+				cmd.ExecuteNonQuery();
+				return Task.FromResult(true);
+			}
+			catch(Exception e)
+			{
+				DialogHelper.ShowErrorMessage(e);
+				return Task.FromResult(false);
+			}
 		}
 
 		#endregion
