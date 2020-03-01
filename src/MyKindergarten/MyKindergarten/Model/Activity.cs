@@ -10,6 +10,7 @@ namespace MyKindergarten.Model
 		public Activity()
 		{
 			AddCategoryCommand = new RelayCommand(AddCategoryCommand_Execute);
+			RemoveCategoryCommand = new RelayCommand(RemoveCategoryCommand_Execute, RemoveCategoryCommand_CanExecute);
 		}
 
 		private long? _ID;

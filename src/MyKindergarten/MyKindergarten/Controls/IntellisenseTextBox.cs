@@ -1,16 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
+using System.Windows.Documents;
 using System.Windows.Input;
 
 namespace MyKindergarten.Controls
 {
-    public class IntellisenseTextBox : TextBox
+    public class IntellisenseTextBox : RichTextBox
     {
         // Templateparts
         Popup PART_IntellisensePopup;
@@ -26,14 +28,33 @@ namespace MyKindergarten.Controls
             set { SetValue(ContentAssistSourceProperty, value); }
         }
 
-        public ICollectionView ContentAssistSource_CollectionView { get; private set; }
+
+
+
+        public IEnumerable<string> ConentAssistSource_ResultView
+        {
+            get { return (IEnumerable<string>)GetValue(ConentAssistSource_ResultViewProperty); }
+            set { SetValue(ConentAssistSource_ResultViewProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for ConentAssistSource_ResultView.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty ConentAssistSource_ResultViewProperty =
+            DependencyProperty.Register("ConentAssistSource_ResultView", typeof(IEnumerable<string>), typeof(IntellisenseTextBox), new PropertyMetadata(default(IEnumerable<string>)));
+
+
+
+
+        //public ICollectionView ContentAssistSource_CollectionView { get; private set; }
 
         private static void OnContentAssistSourceChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             if (d is IntellisenseTextBox intellisenseTextBox)
             {
-                intellisenseTextBox.ContentAssistSource_CollectionView = CollectionViewSource.GetDefaultView(e.NewValue ?? new List<string>()) ;
-                intellisenseTextBox.ContentAssistSource_CollectionView.Filter = o => { return ((string)o).Contains(intellisenseTextBox.sbLastWords.ToString(), StringComparison.OrdinalIgnoreCase); }; 
+                intellisenseTextBox.SetValue(ConentAssistSource_ResultViewProperty,
+                    intellisenseTextBox.ContentAssistSource.Where(x => x.Contains(intellisenseTextBox.sbLastWords.ToString(), StringComparison.OrdinalIgnoreCase)));
+
+                //intellisenseTextBox.ContentAssistSource_CollectionView = CollectionViewSource.GetDefaultView(e.NewValue ?? new List<string>()) ;
+                //intellisenseTextBox.ContentAssistSource_CollectionView.Filter = o => { return ((string)o).Contains(intellisenseTextBox.sbLastWords.ToString(), StringComparison.OrdinalIgnoreCase); }; 
             }
         }
 
@@ -51,10 +72,23 @@ namespace MyKindergarten.Controls
             base.OnApplyTemplate();
 
             this.PART_IntellisensePopup = (Popup)GetTemplateChild(nameof(PART_IntellisensePopup));
-            this.PART_IntellisenseListBox = (ListBox)GetTemplateChild(nameof(PART_IntellisenseListBox));
+            this.PART_IntellisensePopup.Opened += PART_IntellisensePopup_Opened;
 
+            this.PART_IntellisenseListBox = (ListBox)GetTemplateChild(nameof(PART_IntellisenseListBox));
             this.PART_IntellisenseListBox.MouseDoubleClick += PART_IntellisenseListBox_MouseDoubleClick;
             this.PART_IntellisenseListBox.PreviewKeyDown += PART_IntellisenseListBox_PreviewKeyDown;
+        }
+
+        private void PART_IntellisensePopup_Opened(object sender, EventArgs e)
+        {
+            if (sender is Popup popup)
+            {
+                var pos = CaretPosition.GetCharacterRect(System.Windows.Documents.LogicalDirection.Forward);
+                popup.Placement = PlacementMode.RelativePoint;
+                popup.PlacementTarget = this;
+                popup.HorizontalOffset = pos.Left;
+                popup.VerticalOffset = pos.Top + pos.Height;
+            }
         }
 
         private void PART_IntellisenseListBox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
@@ -91,7 +125,7 @@ namespace MyKindergarten.Controls
             bool isInserted = false;
             if (PART_IntellisenseListBox.SelectedIndex != -1)
             {
-                string selectedString = ((string)PART_IntellisenseListBox.SelectedItem).Remove(0, sbLastWords.Length);
+                string selectedString = (string)PART_IntellisenseListBox.SelectedItem;
                 selectedString += SuffixAfterInsert;
 
                 this.InsertText(selectedString);
@@ -108,49 +142,70 @@ namespace MyKindergarten.Controls
         public void InsertText(string text)
         {
             Focus();
-            Text = Text.Insert(CaretIndex, text);
-            CaretIndex += text.Length;
+
+            CaretPosition.DeleteTextInRun(-sbLastWords.Length);
+            CaretPosition.InsertTextInRun(text);
+
+            TextPointer pointer = CaretPosition.GetPositionAtOffset(text.Length);
+            if (pointer != null)
+            {
+                CaretPosition = pointer;
+            }
         }
 
 
         protected override void OnPreviewKeyDown(KeyEventArgs e)
         {
-            if (!IsAssistKeyPressed)
+            if (!PART_IntellisensePopup.IsOpen)
             {
                 base.OnPreviewKeyDown(e);
                 return;
             }
 
-            ContentAssistSource_CollectionView.Refresh();
+            Update_AssistSourceResultView();
 
-            if (e.Key == System.Windows.Input.Key.Back)
+            switch (e.Key)
             {
-                if (sbLastWords.Length > 0)
-                {
-                    sbLastWords.Remove(sbLastWords.Length - 1, 1);
-                    ContentAssistSource_CollectionView.Refresh();
-                }
-                else
-                {
-                    IsAssistKeyPressed = false;
+                case Key.Back:
+                    if (sbLastWords.Length > 0)
+                    {
+                        sbLastWords.Remove(sbLastWords.Length - 1, 1);
+                        Update_AssistSourceResultView();
+                    }
+                    else
+                    {
+                        IsAssistKeyPressed = false;
+                        sbLastWords.Clear();
+                        PART_IntellisensePopup.IsOpen = false;
+                    }
+                    break;
+
+                case Key.Enter:
+                case Key.Space:
+                case Key.Tab:
+                    if (InsertAssistWord())
+                    {
+                        e.Handled = true;
+                    }
+                    break;
+
+                case Key.Down:
+                    if (PART_IntellisenseListBox.SelectedIndex < PART_IntellisenseListBox.Items.Count - 1)
+                        PART_IntellisenseListBox.SelectedIndex += 1;
+                    break;
+
+                case Key.Up:
+                    if (PART_IntellisenseListBox.SelectedIndex > -1)
+                        PART_IntellisenseListBox.SelectedIndex -= 1;
+                    break;
+
+                case Key.Escape:
                     sbLastWords.Clear();
                     PART_IntellisensePopup.IsOpen = false;
-                }
-            }
+                    break;
 
-            //enter key pressed, insert the first item to richtextbox
-            if ((e.Key == Key.Enter || e.Key == Key.Space || e.Key == Key.Tab))
-            {
-                PART_IntellisenseListBox.SelectedIndex = 0;
-                if (InsertAssistWord())
-                {
-                    e.Handled = true;
-                }
-            }
-
-            if (e.Key == Key.Down)
-            {
-                PART_IntellisenseListBox.Focus();
+                default:
+                    break;
             }
 
             base.OnPreviewKeyDown(e);
@@ -160,18 +215,32 @@ namespace MyKindergarten.Controls
         protected override void OnTextInput(System.Windows.Input.TextCompositionEventArgs e)
         {
             base.OnTextInput(e);
-            if (IsAssistKeyPressed == false && e.Text.Length == 1)
+            if (PART_IntellisensePopup.IsOpen == false && e.Text.Length == 1)
             {
                 PART_IntellisensePopup.IsOpen = true;
                 IsAssistKeyPressed = true;
-                ContentAssistSource_CollectionView.Refresh();
+                Update_AssistSourceResultView();
             }
 
             if (IsAssistKeyPressed)
             {
                 sbLastWords.Append(e.Text);
-                ContentAssistSource_CollectionView.Refresh();
+                Update_AssistSourceResultView();
             }
+        }
+
+        protected override void OnGotKeyboardFocus(KeyboardFocusChangedEventArgs e)
+        {
+            PART_IntellisensePopup.IsOpen = true;
+            base.OnGotKeyboardFocus(e);
+        }
+
+        void Update_AssistSourceResultView()
+        {
+            SetValue(ConentAssistSource_ResultViewProperty,
+                    ContentAssistSource.Where(x => x.Contains(sbLastWords.ToString(), StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(x => x));
+
         }
 
         #endregion

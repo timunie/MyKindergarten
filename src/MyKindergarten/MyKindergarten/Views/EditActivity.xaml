@@ -86,6 +86,7 @@
                                                   SelectedItem="{Binding Object}" />
                                         <Button Command="{Binding RelativeSource={RelativeSource AncestorType=ItemsControl}, Path=DataContext.RemoveCategoryCommand}"
                                                 CommandParameter="{Binding}"
+                                                Grid.Column="1"
                                                 Content="X" />
                                     </Grid>
                                 </DataTemplate>
