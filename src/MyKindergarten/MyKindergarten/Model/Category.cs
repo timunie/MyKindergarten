@@ -12,6 +12,7 @@ namespace MyKindergarten.Model
 {
     public class Category : BaseClass
     {
+
 		public Category(SQLiteDataReader reader) : this()
 		{
 			ID = reader.GetNullableLong("ID");

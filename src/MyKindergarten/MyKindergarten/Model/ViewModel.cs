@@ -20,6 +20,8 @@ namespace MyKindergarten.Model
         public static Dictionary<long, Category> DictCategories { get; } = new Dictionary<long, Category>();
         public static List<Category> AllCategories => DictCategories.Values.ToList();
 
+        public static HashSet<string> Buzzwords { get; } = new HashSet<string>() { "Abc", "Def", "Ghi" };
+
         public static void RequeryCategories()
         {
             Categories.Clear();
