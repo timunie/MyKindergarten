@@ -12,7 +12,7 @@ using System.Windows.Input;
 
 namespace MyKindergarten.Controls
 {
-    public class IntellisenseTextBox : RichTextBox
+    public class IntellisenseTextBox : TextBox
     {
         // Templateparts
         Popup PART_IntellisensePopup;
@@ -81,14 +81,11 @@ namespace MyKindergarten.Controls
 
         private void PART_IntellisensePopup_Opened(object sender, EventArgs e)
         {
-            if (sender is Popup popup)
-            {
-                var pos = CaretPosition.GetCharacterRect(System.Windows.Documents.LogicalDirection.Forward);
-                popup.Placement = PlacementMode.RelativePoint;
-                popup.PlacementTarget = this;
-                popup.HorizontalOffset = pos.Left;
-                popup.VerticalOffset = pos.Top + pos.Height;
-            }
+            var pos = GetRectFromCharacterIndex(this.CaretIndex);
+            PART_IntellisensePopup.Placement = PlacementMode.RelativePoint;
+            PART_IntellisensePopup.PlacementTarget = this;
+            PART_IntellisensePopup.HorizontalOffset = pos.Left;
+            PART_IntellisensePopup.VerticalOffset = pos.Top + pos.Height;
         }
 
         private void PART_IntellisenseListBox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
@@ -142,15 +139,15 @@ namespace MyKindergarten.Controls
         public void InsertText(string text)
         {
             Focus();
+            var _newCaretIndex = CaretIndex - sbLastWords.Length;
+            SetValue(TextProperty, Text.Remove(_newCaretIndex, sbLastWords.Length));
+            SetValue(TextProperty, Text.Insert(_newCaretIndex, text));
 
-            CaretPosition.DeleteTextInRun(-sbLastWords.Length);
-            CaretPosition.InsertTextInRun(text);
+            CaretIndex = _newCaretIndex + text.Length;
 
-            TextPointer pointer = CaretPosition.GetPositionAtOffset(text.Length);
-            if (pointer != null)
-            {
-                CaretPosition = pointer;
-            }
+            sbLastWords.Clear();
+            PART_IntellisensePopup.IsOpen = false;
+            Update_AssistSourceResultView();
         }
 
 
@@ -235,12 +232,18 @@ namespace MyKindergarten.Controls
             base.OnGotKeyboardFocus(e);
         }
 
+        protected override void OnLostFocus(RoutedEventArgs e)
+        {
+            PART_IntellisensePopup.IsOpen = false;
+            Update_AssistSourceResultView();
+            base.OnLostFocus(e);
+        }
+
         void Update_AssistSourceResultView()
         {
             SetValue(ConentAssistSource_ResultViewProperty,
                     ContentAssistSource.Where(x => x.Contains(sbLastWords.ToString(), StringComparison.OrdinalIgnoreCase))
                     .OrderBy(x => x));
-
         }
 
         #endregion
